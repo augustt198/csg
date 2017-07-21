@@ -22,9 +22,10 @@ void error_callback(int error, const char *desc) {
     std::printf("[GLFW ERROR] %s (%d)\n", desc, error);
 }
 
-void render_node(csg::node::Node *n);
-
-const char *render_add_menu(const char *popup_id);
+void render_node(csg::node::Node *n, int *id_counter);
+csg::node::Type render_add_menu(const char *popup_id);
+void render_add_node(csg::node::Node **nodePtr, int *id_counter);
+csg::node::Node *create_node_from_type(csg::node::Type type);
 
 int main(int argc, char **argv) {
     if (!glfwInit()) {
@@ -56,7 +57,7 @@ int main(int argc, char **argv) {
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("ProggyTiny.ttf", 18.0f, NULL, NULL);
+    io.Fonts->AddFontFromFileTTF("Karla-Regular.ttf", 18.0f, NULL, NULL);
 
     std::printf("OpenGL %s\n", glGetString(GL_VERSION));
     std::printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -74,18 +75,15 @@ int main(int argc, char **argv) {
         ImGui::Text("Geometry Tree");
         ImGui::Separator();
 
+        int id_counter = 0;
         if (rootNode != NULL) {
-            render_node(rootNode);
+            render_node(rootNode, &id_counter);
         } else {
             if (ImGui::Button(" + Add "))
                 ImGui::OpenPopup("add");
-            const char *selected = render_add_menu("add");
-            if (selected != NULL) {
-                if (strcmp("Union", selected) == 0) {
-                    rootNode = new csg::node::Union();
-                } else if (strcmp("Difference", selected) == 0) {
-                    rootNode = new csg::node::Difference();
-                }
+            csg::node::Type selected = render_add_menu("add");
+            if (selected != csg::node::CSG_NONE) {
+                rootNode = create_node_from_type(selected);
             }
         }
 
@@ -99,37 +97,107 @@ int main(int argc, char **argv) {
     glfwTerminate();
 }
 
-void render_node(csg::node::Node *n) {
+void render_node(csg::node::Node *n, int *id_counter) {
     //std::printf("Called render node with %p\n", n);
     if (n == NULL) {
-        ImGui::Bullet();
-        ImGui::SameLine();
-        ImGui::Button(" + Add ");
+        ImGui::BulletText("Some NULL shet");
     } else if (n->type == csg::node::CSG_UNION) {
         csg::node::Union *unionNode = (csg::node::Union*) n;
         if (ImGui::TreeNode("Union")) {
-            render_node(unionNode->left);
-            render_node(unionNode->right);
+            if (unionNode->left != NULL)
+                render_node(unionNode->left, id_counter);
+            else
+                render_add_node(&(unionNode->left), id_counter);
+
+            if (unionNode->right != NULL)
+                render_node(unionNode->right, id_counter);
+            else
+                render_add_node(&(unionNode->right), id_counter);
             ImGui::TreePop();
         }
     } else if (n->type == csg::node::CSG_DIFFERENCE) {
         csg::node::Difference *diffNode = (csg::node::Difference*) n;
         if (ImGui::TreeNode("Difference")) {
-            render_node(diffNode->left);
-            render_node(diffNode->right);
+            if (diffNode->left != NULL)
+                render_node(diffNode->left, id_counter);
+            else
+                render_add_node(&(diffNode->left), id_counter);
+
+            if (diffNode->right != NULL)
+                render_node(diffNode->right, id_counter);
+            else
+                render_add_node(&(diffNode->right), id_counter);
             ImGui::TreePop();
         }
+    } else if (n->type == csg::node::CSG_SPHERE) {
+        csg::node::Sphere *sphere = (csg::node::Sphere*) n;
+
+        if (sphere->isLinked) {
+            // update proportions
+            sphere->prop1 = sphere->ax1;
+            sphere->prop2 = sphere->ax2;
+            sphere->prop3 = sphere->ax3;
+        }
+
+        
+        float ax1_prev = sphere->ax1,
+              ax2_prev = sphere->ax2,
+              ax3_prev = sphere->ax3;
+
+        ImGui::BulletText("Sphere");
+        ImGui::Indent();
+        ImGui::DragFloat3("###Radius", &(sphere->ax1), 0.02, 0.001f, 1000.0);
+        ImGui::SameLine();
+        ImGui::Checkbox("###checx", &(sphere->isLinked));
+
+        if (sphere->isLinked) {
+            if (ax1_prev != sphere->ax1) { // ax1 changed
+                sphere->ax2 = sphere->ax1 * (sphere->prop2 / sphere->prop1);
+                sphere->ax3 = sphere->ax1 * (sphere->prop3 / sphere->prop1);
+            } else if (ax2_prev != sphere->ax2) {
+                sphere->ax1 = sphere->ax2 * (sphere->prop1 / sphere->prop2);
+                sphere->ax3 = sphere->ax2 * (sphere->prop3 / sphere->prop2);
+            } else if (ax3_prev != sphere->ax3) {
+                sphere->ax1 = sphere->ax3 * (sphere->prop1 / sphere->prop3);
+                sphere->ax2 = sphere->ax3 * (sphere->prop2 / sphere->prop3);
+            }
+        }
+
+        ImGui::Unindent();
+    } else if (n->type == csg::node::CSG_CUBE) {
+        ImGui::BulletText("Cube");
     } else {
-        ImGui::BulletText("whattup kids?");
+        ImGui::BulletText("Unknown!");
     }
 }
 
-const char *render_add_menu(const char *popup_id) {
-    const char *selected = NULL;
-    const char *types[] = {"Union", "Intersection", "Difference", "Sphere"};
+void render_add_node(csg::node::Node **nodePtr, int *id_counter) {
+    ImGui::Bullet();
+    ImGui::SameLine();
+
+    (*id_counter)++;
+    char id_str[15] = {0};
+    char button_str[30] = {0};
+    std::sprintf(id_str, "%d", *id_counter);
+    std::sprintf(button_str, " + Add ###%d", *id_counter);
+
+    if (ImGui::Button(button_str))
+        ImGui::OpenPopup(id_str);
+    csg::node::Type selectedType = render_add_menu(id_str);
+    if (selectedType != csg::node::CSG_NONE) {
+        csg::node::Node *newNode = create_node_from_type(selectedType);
+        *nodePtr = newNode;
+    }
+}
+
+csg::node::Type render_add_menu(const char *popup_id) {
+    csg::node::Type selected = csg::node::CSG_NONE;
+    csg::node::Type types[] = {csg::node::CSG_UNION, csg::node::CSG_INTERSECTION,
+        csg::node::CSG_DIFFERENCE, csg::node::CSG_SPHERE, csg::node::CSG_CUBE};
+    const char *typeNames[] = {"Union", "Intersection", "Difference", "Sphere", "Cube"};
     if (ImGui::BeginPopup(popup_id)) {
         for (int i = 0; i < IM_ARRAYSIZE(types); i++) {
-            if (ImGui::Selectable(types[i]))
+            if (ImGui::Selectable(typeNames[i]))
                 selected = types[i];
         }
 
@@ -137,4 +205,20 @@ const char *render_add_menu(const char *popup_id) {
     }
 
     return selected;
+}
+
+csg::node::Node *create_node_from_type(csg::node::Type type) {
+    if (type == csg::node::CSG_UNION) {
+        return new csg::node::Union();
+    } else if (type == csg::node::CSG_INTERSECTION) {
+        return new csg::node::Intersection();
+    } else if (type == csg::node::CSG_DIFFERENCE) {
+        return new csg::node::Difference();
+    } else if (type == csg::node::CSG_SPHERE) {
+        return new csg::node::Sphere();
+    } else if (type == csg::node::CSG_CUBE) {
+        return new csg::node::Cube();
+    } else {
+        return NULL;
+    }
 }
