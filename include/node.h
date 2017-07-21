@@ -23,6 +23,7 @@ class Union : public Node {
 
     Union() {
         type = CSG_UNION;
+        left = NULL, right = NULL;
     }
 };
 
@@ -32,6 +33,7 @@ class Intersection : public Node {
 
     Intersection() {
         type = CSG_INTERSECTION;
+        left = NULL, right = NULL;
     }
 };
 
@@ -41,6 +43,7 @@ class Difference : public Node {
 
     Difference() {
         type = CSG_DIFFERENCE;
+        left = NULL, right = NULL;
     }
 };
 

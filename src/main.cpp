@@ -24,7 +24,7 @@ void error_callback(int error, const char *desc) {
 
 void render_node(csg::node::Node *n);
 
-void render_add_menu();
+const char *render_add_menu(const char *popup_id);
 
 int main(int argc, char **argv) {
     if (!glfwInit()) {
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("../ProggyTiny.ttf", 18.0f, NULL, NULL);
+    io.Fonts->AddFontFromFileTTF("ProggyTiny.ttf", 18.0f, NULL, NULL);
 
     std::printf("OpenGL %s\n", glGetString(GL_VERSION));
     std::printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -71,12 +71,22 @@ int main(int argc, char **argv) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui::Begin("CSG");
-        ImGui::Text("whattup people");
+        ImGui::Text("Geometry Tree");
+        ImGui::Separator();
 
         if (rootNode != NULL) {
             render_node(rootNode);
         } else {
-            if (ImGui::Button(" + Add "));
+            if (ImGui::Button(" + Add "))
+                ImGui::OpenPopup("add");
+            const char *selected = render_add_menu("add");
+            if (selected != NULL) {
+                if (strcmp("Union", selected) == 0) {
+                    rootNode = new csg::node::Union();
+                } else if (strcmp("Difference", selected) == 0) {
+                    rootNode = new csg::node::Difference();
+                }
+            }
         }
 
         ImGui::End();
@@ -90,11 +100,23 @@ int main(int argc, char **argv) {
 }
 
 void render_node(csg::node::Node *n) {
-    if (n->type == csg::node::CSG_UNION) {
+    //std::printf("Called render node with %p\n", n);
+    if (n == NULL) {
+        ImGui::Bullet();
+        ImGui::SameLine();
+        ImGui::Button(" + Add ");
+    } else if (n->type == csg::node::CSG_UNION) {
         csg::node::Union *unionNode = (csg::node::Union*) n;
         if (ImGui::TreeNode("Union")) {
             render_node(unionNode->left);
             render_node(unionNode->right);
+            ImGui::TreePop();
+        }
+    } else if (n->type == csg::node::CSG_DIFFERENCE) {
+        csg::node::Difference *diffNode = (csg::node::Difference*) n;
+        if (ImGui::TreeNode("Difference")) {
+            render_node(diffNode->left);
+            render_node(diffNode->right);
             ImGui::TreePop();
         }
     } else {
@@ -110,6 +132,8 @@ const char *render_add_menu(const char *popup_id) {
             if (ImGui::Selectable(types[i]))
                 selected = types[i];
         }
+
+        ImGui::EndPopup();
     }
 
     return selected;
