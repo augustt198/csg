@@ -7,6 +7,7 @@
 #include "imgui_impl_glfw_gl3.h"
 
 #include "node.h"
+#include "mc.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -26,6 +27,10 @@ void render_node(csg::node::Node *n, int *id_counter);
 csg::node::Type render_add_menu(const char *popup_id);
 void render_add_node(csg::node::Node **nodePtr, int *id_counter);
 csg::node::Node *create_node_from_type(csg::node::Type type);
+
+float testthingy(float x, float y, float z) {
+    return x + y + z;
+}
 
 int main(int argc, char **argv) {
     if (!glfwInit()) {
@@ -64,6 +69,10 @@ int main(int argc, char **argv) {
 
     csg::node::Node *rootNode = NULL;
 
+    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.01, 0.01, 0.01);
+    mcInstance.isosurface(testthingy, 1.0);
+
+
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
         ImGui_ImplGlfwGL3_NewFrame();
@@ -73,6 +82,8 @@ int main(int argc, char **argv) {
 
         ImGui::Begin("CSG");
         ImGui::Text("Geometry Tree");
+        ImGui::SameLine(ImGui::GetWindowWidth()-65);
+        ImGui::Button("Render");
         ImGui::Separator();
 
         int id_counter = 0;

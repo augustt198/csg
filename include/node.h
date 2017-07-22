@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
 
 using std::sin;
 using std::cos;
@@ -24,11 +25,12 @@ class Node {
 
     Type type;
     
-    virtual bool evaluate(float x, float y, float z) {
-        return false;
-    }
+    // values < 1 are inside the surface
+    // values > 1 are outside the surface
+    virtual float evaluate(float x, float y, float z) = 0;
 };
 
+// union of left and right (commutative)
 class Union : public Node {
     public:
     Node *left, *right;
@@ -38,11 +40,12 @@ class Union : public Node {
         left = NULL, right = NULL;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
-        return left->evaluate(x, y, z) || right->evaluate(x, y, z);
+    virtual float evaluate(float x, float y, float z) {
+        return std::min(left->evaluate(x, y, z), right->evaluate(x, y, z));
     }
 };
 
+// intersection of left and right (commutative)
 class Intersection : public Node {
     public:
     Node *left, *right;
@@ -52,11 +55,12 @@ class Intersection : public Node {
         left = NULL, right = NULL;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
-        return left->evaluate(x, y, z) && right->evaluate(x, y, z);
+    virtual float evaluate(float x, float y, float z) {
+        return std::max(left->evaluate(x, y, z), right->evaluate(x, y, z));
     }
 };
 
+// difference of left and right (not commutative)
 class Difference : public Node {
     public:
     Node *left, *right;
@@ -66,8 +70,8 @@ class Difference : public Node {
         left = NULL, right = NULL;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
-        return left->evaluate(x, y, z) && !right->evaluate(x, y, z);
+    virtual float evaluate(float x, float y, float z) {
+        return std::max(left->evaluate(x, y, z), -right->evaluate(x, y, z));
     }
 };
 
@@ -84,8 +88,8 @@ class Sphere : public Node {
         prop1 = 1.0, prop2 = 1.0, prop3 = 1.0;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
-        return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3) <= 1;
+    virtual float evaluate(float x, float y, float z) {
+        return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3);
     }
 };
 
@@ -98,8 +102,12 @@ class Cube : public Node {
         ax1 = 1.0, ax2 = 1.0, ax3 = 1.0;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
-        return x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && y>=-ax3 && y>=ax3;
+    virtual float evaluate(float x, float y, float z) {
+        if (x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && y>=-ax3 && y>=ax3) {
+            return 0.5;
+        } else {
+            return 1.5;
+        }
     }
 };
 
@@ -113,7 +121,7 @@ class Translate : public Node {
         dx = 0.0, dy = 0.0, dz = 0.0;
     }
 
-    virtual bool evaluate(float x, float y, float z) {
+    virtual float evaluate(float x, float y, float z) {
         return node->evaluate(x-dx, y-dx, z-dx);
     }
 };
@@ -128,7 +136,7 @@ class Rotate : public Node {
         r1 = 0.0, r2 = 0.0, r3 = 0.0;
     }
 
-    virtual bool evaluate(float x0, float y0, float z0) {
+    virtual float evaluate(float x0, float y0, float z0) {
         float s1 = sin(r1), c1 = cos(r1),
               s2 = sin(r2), c2 = cos(r2),
               s3 = sin(r3), c3 = cos(r3);
