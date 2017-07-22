@@ -4,7 +4,7 @@
 
 #define EPSILON 0.00001
 
-using namespace csg;
+namespace csg {
 
 Vec3 lerp(float w, float val1, float val2, Vec3 v1, Vec3 v2) {
     if (std::abs(w - val1) < EPSILON)
@@ -20,4 +20,6 @@ Vec3 lerp(float w, float val1, float val2, Vec3 v1, Vec3 v2) {
         v1.y + mu*(v2.y - v1.y),
         v1.z + mu*(v2.z - v1.z)
     );
+}
+
 }

@@ -8,6 +8,7 @@
 
 #include "node.h"
 #include "mc.h"
+#include "shader.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
