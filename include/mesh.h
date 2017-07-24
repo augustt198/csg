@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <ostream>
 
 #include "common.h"
 
@@ -14,6 +15,8 @@ class Mesh {
     void render();
 
     void updateVertices(std::vector<Vertex> newVertices);
+
+    void writeSTL(std::ostream& out, const char *solidName="mesh", bool ascii=true);
 
     private:
     GLuint VAO, VBO;

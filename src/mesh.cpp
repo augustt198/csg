@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+#include <cmath>
+
 namespace csg {
 
 Mesh::Mesh(std::vector<Vertex> vertices) : vertices(vertices) {
@@ -38,6 +40,30 @@ void Mesh::updateVertices(std::vector<Vertex> newVertices) {
 
     vertices = newVertices;
     glBindVertexArray(0);
+}
+
+void Mesh::writeSTL(std::ostream& out, const char *solidName, bool ascii) {
+    out << "solid " << solidName << std::endl;
+    for (int i = 0; i < vertices.size(); i += 3) {
+        // get face normal from vertex normals
+        Vec3 n1 = vertices[i+0].normal;
+        Vec3 n2 = vertices[i+1].normal;
+        Vec3 n3 = vertices[i+2].normal;
+        float avgX = (n1.x+n2.x+n3.x)/3.0,
+              avgY = (n1.y+n2.y+n3.y)/3.0,
+              avgZ = (n1.z+n2.z+n3.z)/3.0;
+        // normalize avg
+        float dist = std::sqrt(avgX*avgX + avgY*avgY + avgZ*avgZ);
+        
+        out << "facet normal " << avgX/dist << " " << avgY/dist << avgZ/dist << std::endl;
+        out << "    outer loop" << std::endl;
+        for (int j = 0; j < 3; j++) {
+            Vec3 v = vertices[i+j].position;
+            out << "        vertex " << v.x << " " << v.y << " " << v.z << std::endl;
+        }
+        out << "    endloop";
+    }
+    out << "endSolid " << solidName << std::endl;
 }
 
 }
