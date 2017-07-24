@@ -5,6 +5,8 @@
 
 using std::sin;
 using std::cos;
+using std::max;
+using std::abs;
 
 namespace csg {
 namespace node {
@@ -99,15 +101,18 @@ class Cube : public Node {
 
     Cube() {
         type = CSG_CUBE;
-        ax1 = 1.0, ax2 = 1.0, ax3 = 1.0;
+        ax1 = 0.5, ax2 = 0.5, ax3 = 0.5;
     }
 
     virtual float evaluate(float x, float y, float z) {
-        if (x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && y>=-ax3 && y>=ax3) {
+        return max(max(abs(x), abs(y)), abs(z))*2.0;
+        /*
+        if (x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && z>=-ax3 && z>=ax3) {
             return 0.5;
         } else {
             return 1.5;
         }
+        */
     }
 };
 

@@ -3,20 +3,20 @@
 
 using namespace csg;
 
-std::vector<Vec3> *mc::MarchingCubes::isosurface(mc::ScalarFieldFunc f, float w) {
-    std::vector<Vec3> *verts = new std::vector<Vec3>();
+std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float w, bool calculateNormals) {
+    std::vector<Vertex> *verts = new std::vector<Vertex>();
 
     for (float x = minX; x <= maxX; x += stepX) {
         for (float y = minY; y < maxY; y += stepY) {
             for (float z = minZ; z < maxZ; z += stepZ) {
-                float f0 = f(x, y, z),
-                      f1 = f(x, y+stepY, z),
-                      f2 = f(x+stepX, y+stepY, z),
-                      f3 = f(x+stepX, y, z),
-                      f4 = f(x, y, z+stepZ),
-                      f5 = f(x, y+stepY, z+stepZ),
-                      f6 = f(x+stepX, y+stepY, z+stepZ),
-                      f7 = f(x+stepX, y, z+stepZ);
+                float f0 = node.evaluate(x, y, z),
+                      f1 = node.evaluate(x, y+stepY, z),
+                      f2 = node.evaluate(x+stepX, y+stepY, z),
+                      f3 = node.evaluate(x+stepX, y, z),
+                      f4 = node.evaluate(x, y, z+stepZ),
+                      f5 = node.evaluate(x, y+stepY, z+stepZ),
+                      f6 = node.evaluate(x+stepX, y+stepY, z+stepZ),
+                      f7 = node.evaluate(x+stepX, y, z+stepZ);
 
                 int idx = 0;
                 idx = (f0>w)<<0 | (f1>w)<<1 | (f2>w)<<2 | (f3>w)<<3 | (f4>w)<<4 | (f5>w)<<5 | (f6>w)<<6 | (f7>w)<<7;
@@ -50,7 +50,24 @@ std::vector<Vec3> *mc::MarchingCubes::isosurface(mc::ScalarFieldFunc f, float w)
                     vertlist[11] = lerp(w, f3, f7, Vec3(x+stepX, y, z), Vec3(x+stepX, y, z+stepZ));
 
                 for (int i = 0; triTable[idx][i] != -1; i++) {
-                    verts->push_back(vertlist[triTable[idx][i]]);
+                    Vec3 pos = vertlist[triTable[idx][i]];
+                    Vec3 normal;
+                    if (calculateNormals) {
+                        // sample points in x, y, z directions
+                        float delta = 0.001;
+
+                        float val_center = node.evaluate(pos.x, pos.y, pos.z);
+                        float val_x_offset = node.evaluate(pos.x+delta, pos.y, pos.z);
+                        float val_y_offset = node.evaluate(pos.x, pos.y+delta, pos.z);
+                        float val_z_offset = node.evaluate(pos.x, pos.y, pos.z+delta);
+
+                        float partial_x = (val_x_offset - val_center)/delta;
+                        float partial_y = (val_y_offset - val_center)/delta;
+                        float partial_z = (val_z_offset - val_center)/delta;
+                        normal = Vec3(partial_x, partial_y, partial_z);
+                    }
+                    Vertex vert = {pos, normal};
+                    verts->push_back(vert);
                 }
             }
         }

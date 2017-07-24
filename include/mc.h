@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "common.h"
+#include "node.h"
 
 namespace csg {
 namespace mc {
@@ -20,7 +21,7 @@ class MarchingCubes {
         stepX(_stepX), stepY(_stepY), stepZ(_stepZ) {}
 
     
-    std::vector<Vec3> *isosurface(ScalarFieldFunc f, float w);
+    std::vector<Vertex> *isosurface(csg::node::Node &node, float w, bool calculateNormals=true);
      
 };
 

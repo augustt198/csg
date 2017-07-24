@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <cstdio>
+#include <vector>
 
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
@@ -9,6 +10,7 @@
 #include "node.h"
 #include "mc.h"
 #include "shader.h"
+#include "mesh.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -44,8 +46,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
     GLFWwindow *win = create_window();
     if (!win) {
         std::printf("Couldn't create GLFW window\n");
@@ -62,6 +63,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    glEnable(GL_DEPTH_TEST);
+
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("Karla-Regular.ttf", 18.0f, NULL, NULL);
 
@@ -70,21 +73,41 @@ int main(int argc, char **argv) {
 
     csg::node::Node *rootNode = NULL;
 
-    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.01, 0.01, 0.01);
-    mcInstance.isosurface(testthingy, 1.0);
+    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.02, 0.02, 0.02);
 
+    csg::ShaderProgram shader("shaders/shader.vert", "shaders/shader.frag");
+    csg::Mesh *mesh = nullptr;
 
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
         ImGui_ImplGlfwGL3_NewFrame();
 
         glClearColor(0.2, 0.2, 0.2, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        if (mesh) {
+            glUseProgram(shader.program);
+            mesh->render(); 
+            glUseProgram(0);
+        }
 
         ImGui::Begin("CSG");
         ImGui::Text("Geometry Tree");
         ImGui::SameLine(ImGui::GetWindowWidth()-65);
-        ImGui::Button("Render");
+        if (ImGui::Button("Render") && rootNode != NULL) {
+            std::vector<csg::Vertex> *verts = mcInstance.isosurface(*rootNode, 1.0);
+            std::printf("Isosurface created. Vert count: %lu\n", verts->size());
+
+            if (mesh) {
+
+            } else {
+                mesh = new csg::Mesh(*verts);
+                for (int i = 0; i < 10; i++) {
+                    csg::Vertex v = (*verts)[i];
+                    std::printf("normal %f %f %f\n", v.normal.x, v.normal.y, v.normal.z);
+                }
+            }
+        }
         ImGui::Separator();
 
         int id_counter = 0;
