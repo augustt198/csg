@@ -91,7 +91,7 @@ class Sphere : public Node {
     }
 
     virtual float evaluate(float x, float y, float z) {
-        return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3);
+        return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3) - 1;
     }
 };
 
@@ -105,7 +105,7 @@ class Cube : public Node {
     }
 
     virtual float evaluate(float x, float y, float z) {
-        return max(max(abs(x), abs(y)), abs(z))*2.0;
+        return max(max(abs(x), abs(y)), abs(z)) - 0.5;
         /*
         if (x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && z>=-ax3 && z>=ax3) {
             return 0.5;

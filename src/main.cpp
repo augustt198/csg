@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <vector>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 
@@ -11,12 +14,14 @@
 #include "mc.h"
 #include "shader.h"
 #include "mesh.h"
+#include "camera.h"
+#include "glmutil.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 GLFWwindow *create_window() {
-    int width = 640;
-    int height = 480;
+    int width = 1100;
+    int height = 720;
     const char *title = "CSG";
 
     return glfwCreateWindow(width, height, title, NULL, NULL);
@@ -73,10 +78,12 @@ int main(int argc, char **argv) {
 
     csg::node::Node *rootNode = NULL;
 
-    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.02, 0.02, 0.02);
+    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.015, 0.015, 0.015);
 
     csg::ShaderProgram shader("shaders/shader.vert", "shaders/shader.frag");
     csg::Mesh *mesh = nullptr;
+
+    csg::OrbitCamera camera;
 
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
@@ -87,7 +94,16 @@ int main(int argc, char **argv) {
 
         if (mesh) {
             glUseProgram(shader.program);
-            mesh->render(); 
+            camera.setAngles(glfwGetTime()/2, glfwGetTime()/2);
+            shader.setMat4("cameraDir", camera.getCameraMatrix());
+
+            int width, height;
+            glfwGetWindowSize(win, &width, &height);
+            float aspect = (float) width / height;
+            glm::mat4 perspective = glm::perspective(0.5f, aspect, 0.001f, 1000.0f);
+            shader.setMat4("perspective", perspective);
+
+            mesh->render();
             glUseProgram(0);
         }
 
@@ -95,16 +111,18 @@ int main(int argc, char **argv) {
         ImGui::Text("Geometry Tree");
         ImGui::SameLine(ImGui::GetWindowWidth()-65);
         if (ImGui::Button("Render") && rootNode != NULL) {
-            std::vector<csg::Vertex> *verts = mcInstance.isosurface(*rootNode, 1.0);
+            std::vector<csg::Vertex> *verts = mcInstance.isosurface(*rootNode, 0.0);
             std::printf("Isosurface created. Vert count: %lu\n", verts->size());
 
-            if (mesh) {
-
-            } else {
-                mesh = new csg::Mesh(*verts);
-                for (int i = 0; i < 10; i++) {
-                    csg::Vertex v = (*verts)[i];
-                    std::printf("normal %f %f %f\n", v.normal.x, v.normal.y, v.normal.z);
+            if (verts->size() > 0) {
+                if (mesh) {
+                    mesh->updateVertices(*verts);
+                } else {
+                    mesh = new csg::Mesh(*verts);
+                    for (int i = 0; i < 10; i++) {
+                        csg::Vertex v = (*verts)[i];
+                        std::printf("normal %f %f %f\n", v.normal.x, v.normal.y, v.normal.z);
+                    }
                 }
             }
         }

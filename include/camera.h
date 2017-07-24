@@ -1,14 +1,16 @@
-#include <glm/core.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
 
 namespace csg {
 
+    // camera for orbitting about a single point
     class OrbitCamera {
         
         public:
-        Camera(float distance=5.0) : distance(distance) {
+        OrbitCamera(float distance=10.0) : distance(distance) {
+            distance = 10.0;
             theta = 0.0;
             phi = 0.0;
         }
@@ -34,6 +36,6 @@ namespace csg {
         float distance;
         float theta, phi;
 
-    }
+    };
 
 }

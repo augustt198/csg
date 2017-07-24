@@ -38,6 +38,7 @@ class Mesh {
     }
 
     void updateVertices(std::vector<Vertex> newVertices) {
+        glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         if (newVertices.size() < vertices.size()) {
             glBufferSubData(GL_ARRAY_BUFFER, 0, newVertices.size() * sizeof(Vertex), &(newVertices[0]));
@@ -46,6 +47,7 @@ class Mesh {
         }
 
         vertices = newVertices;
+        glBindVertexArray(0);
     }
 
     private:

@@ -19,7 +19,14 @@ std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float 
                       f7 = node.evaluate(x+stepX, y, z+stepZ);
 
                 int idx = 0;
-                idx = (f0>w)<<0 | (f1>w)<<1 | (f2>w)<<2 | (f3>w)<<3 | (f4>w)<<4 | (f5>w)<<5 | (f6>w)<<6 | (f7>w)<<7;
+                if (f0 > w) idx |= (1<<0);
+                if (f1 > w) idx |= (1<<1);
+                if (f2 > w) idx |= (1<<2);
+                if (f3 > w) idx |= (1<<3);
+                if (f4 > w) idx |= (1<<4);
+                if (f5 > w) idx |= (1<<5);
+                if (f6 > w) idx |= (1<<6);
+                if (f7 > w) idx |= (1<<7);
 
                 Vec3 vertlist[12];
                 
@@ -27,9 +34,9 @@ std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float 
                 if (edges & (1<<0))
                     vertlist[0] = lerp(w, f0, f1, Vec3(x, y, z), Vec3(x, y+stepY, z));
                 if (edges & (1<<1))
-                    vertlist[1] = lerp(w, f1, f2, Vec3(x, y+stepY, z), Vec3(x+stepX, y+stepY, z+stepZ));
+                    vertlist[1] = lerp(w, f1, f2, Vec3(x, y+stepY, z), Vec3(x+stepX, y+stepY, z));
                 if (edges & (1<<2))
-                    vertlist[2] = lerp(w, f2, f3, Vec3(x+stepX, y+stepY, z+stepZ), Vec3(x+stepX, y, z));
+                    vertlist[2] = lerp(w, f2, f3, Vec3(x+stepX, y+stepY, z), Vec3(x+stepX, y, z));
                 if (edges & (1<<3))
                     vertlist[3] = lerp(w, f3, f0, Vec3(x+stepX, y, z), Vec3(x, y, z));
                 if (edges & (1<<4))
