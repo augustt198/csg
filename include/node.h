@@ -40,18 +40,9 @@ class Union : public Node {
     public:
     Node *left, *right;
 
-    Union() {
-        type = CSG_UNION;
-        left = NULL, right = NULL;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return std::min(left->evaluate(x, y, z), right->evaluate(x, y, z));
-    }
-
-    virtual BoundingBox getBoundingBox() {
-        return bbUnion(left->getBoundingBox(), right->getBoundingBox());
-    }
+    Union();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 // intersection of left and right (commutative)
@@ -59,19 +50,9 @@ class Intersection : public Node {
     public:
     Node *left, *right;
 
-    Intersection() {
-        type = CSG_INTERSECTION;
-        left = NULL, right = NULL;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return std::max(left->evaluate(x, y, z), right->evaluate(x, y, z));
-    }
-
-    // TODO
-    virtual BoundingBox getBoundingBox() {
-        return BoundingBox(Vec3(), Vec3());
-    }
+    Intersection();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 // difference of left and right (not commutative)
@@ -79,19 +60,9 @@ class Difference : public Node {
     public:
     Node *left, *right;
 
-    Difference() {
-        type = CSG_DIFFERENCE;
-        left = NULL, right = NULL;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return std::max(left->evaluate(x, y, z), -right->evaluate(x, y, z));
-    }
-
-    // can't make any assumptions
-    virtual BoundingBox getBoundingBox() {
-        return bbUnion(left->getBoundingBox(), right->getBoundingBox());
-    }
+    Difference();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 class Sphere : public Node {
@@ -100,51 +71,18 @@ class Sphere : public Node {
     bool isLinked;
     float prop1, prop2, prop3;
 
-    Sphere() {
-        type = CSG_SPHERE;
-        ax1 = 1.0, ax2 = 1.0, ax3 = 1.0;
-        isLinked = true;
-        prop1 = 1.0, prop2 = 1.0, prop3 = 1.0;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3) - 1;
-    }
-
-    virtual BoundingBox getBoundingBox() {
-        return BoundingBox(
-            Vec3(-ax1, -ax2, -ax3),
-            Vec3(ax1, ax2, ax3)
-        );
-    }
+    Sphere();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 class Cube : public Node {
     public:
     float ax1, ax2, ax3;
 
-    Cube() {
-        type = CSG_CUBE;
-        ax1 = 0.5, ax2 = 0.5, ax3 = 0.5;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return max(max(abs(x), abs(y)), abs(z)) - 0.5;
-        /*
-        if (x>=-ax1 && x<=ax1 && y>=-ax2 && y<=ax2 && z>=-ax3 && z>=ax3) {
-            return 0.5;
-        } else {
-            return 1.5;
-        }
-        */
-    }
-
-    virtual BoundingBox getBoundingBox() {
-        return BoundingBox(
-            Vec3(-ax1, -ax2, -ax3),
-            Vec3(ax1, ax2, ax3)
-        );
-    }
+    Cube();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 class Translate : public Node {
@@ -152,22 +90,9 @@ class Translate : public Node {
     float dx, dy, dz;
     Node *node;
 
-    Translate() {
-        type = CSG_TRANSLATE;
-        dx = 0.0, dy = 0.0, dz = 0.0;
-    }
-
-    virtual float evaluate(float x, float y, float z) {
-        return node->evaluate(x-dx, y-dx, z-dx);
-    }
-
-    virtual BoundingBox getBoundingBox() {
-        BoundingBox bb = node->getBoundingBox();
-        return BoundingBox(
-            Vec3(bb.min.x+dx, bb.min.y+dy, bb.min.z+dy),
-            Vec3(bb.max.x+dx, bb.max.y+dy, bb.max.z+dy)
-        );
-    }
+    Translate();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
 };
 
 class Rotate : public Node {
@@ -175,22 +100,8 @@ class Rotate : public Node {
     float r1, r2, r3;
     Node *node;
 
-    Rotate() {
-        type = CSG_ROTATE;
-        r1 = 0.0, r2 = 0.0, r3 = 0.0;
-    }
-
-    virtual float evaluate(float x0, float y0, float z0) {
-        float s1 = sin(r1), c1 = cos(r1),
-              s2 = sin(r2), c2 = cos(r2),
-              s3 = sin(r3), c3 = cos(r3);
-
-        float x = x0*(c2*c3) - y0*s2 + z0*(c2*s3);
-        float y = x0*(s1*s3+c1*c3*s2) + y0*(c1*c2) + z0*(c1*s2*s3 - c3*s1);
-        float z = z0*(c3*s1*s2 - c1*s3) + y0*(c2*s1) + z0*(c1*c3 + s1*s2*s3);
-
-        return node->evaluate(x, y, z);
-    }
+    Rotate();
+    virtual float evaluate(float x0, float y0, float z0);
 };
     
 } // end namespace node
