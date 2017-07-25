@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <vector>
+#include <fstream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -35,10 +36,6 @@ void render_node(csg::node::Node *n);
 csg::node::Type render_add_menu(const char *popup_id);
 void render_add_node(csg::node::Node **nodePtr, int id, int sub_id);
 csg::node::Node *create_node_from_type(csg::node::Type type);
-
-float testthingy(float x, float y, float z) {
-    return x + y + z;
-}
 
 int main(int argc, char **argv) {
     if (!glfwInit()) {
@@ -124,6 +121,10 @@ int main(int argc, char **argv) {
                         std::printf("normal %f %f %f\n", v.normal.x, v.normal.y, v.normal.z);
                     }
                 }
+
+                std::ofstream stlFile("mesh.stl");
+                mesh->writeSTL(stlFile);
+                stlFile.close();
             }
         }
         ImGui::Separator();

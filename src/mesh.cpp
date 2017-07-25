@@ -55,15 +55,16 @@ void Mesh::writeSTL(std::ostream& out, const char *solidName, bool ascii) {
         // normalize avg
         float dist = std::sqrt(avgX*avgX + avgY*avgY + avgZ*avgZ);
         
-        out << "facet normal " << avgX/dist << " " << avgY/dist << avgZ/dist << std::endl;
+        out << "facet normal " << avgX/dist << " " << avgY/dist << " " << avgZ/dist << std::endl;
         out << "    outer loop" << std::endl;
         for (int j = 0; j < 3; j++) {
             Vec3 v = vertices[i+j].position;
             out << "        vertex " << v.x << " " << v.y << " " << v.z << std::endl;
         }
-        out << "    endloop";
+        out << "    endloop" << std::endl;
+        out << "endfacet" << std::endl;
     }
-    out << "endSolid " << solidName << std::endl;
+    out << "endsolid " << solidName << std::endl;
 }
 
 }
