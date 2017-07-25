@@ -17,4 +17,6 @@ include_directories(include)
 include_directories(deps/imgui)
 include_directories(deps/gl3w/include)
 
+add_definitions(-O3)
+
 target_link_libraries(csg glfw3)
