@@ -17,6 +17,7 @@
 #include "mesh.h"
 #include "camera.h"
 #include "glmutil.h"
+#include "customgui.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -75,7 +76,7 @@ int main(int argc, char **argv) {
 
     csg::node::Node *rootNode = NULL;
 
-    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.015, 0.015, 0.015);
+    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.01, 0.01, 0.01);
 
     csg::ShaderProgram shader("shaders/shader.vert", "shaders/shader.frag");
     csg::Mesh *mesh = nullptr;
@@ -198,43 +199,46 @@ void render_node(csg::node::Node *n) {
         }
     } else if (n->type == csg::node::CSG_SPHERE) {
         csg::node::Sphere *sphere = (csg::node::Sphere*) n;
-
-        if (sphere->isLinked) {
-            // update proportions
-            sphere->prop1 = sphere->ax1;
-            sphere->prop2 = sphere->ax2;
-            sphere->prop3 = sphere->ax3;
-        }
-
-        
-        float ax1_prev = sphere->ax1,
-              ax2_prev = sphere->ax2,
-              ax3_prev = sphere->ax3;
-
         ImGui::BulletText("Sphere");
         ImGui::Indent();
-        ImGui::DragFloat3(sphere->idString("###%d_radius"), &(sphere->ax1), 0.02, 0.001f, 1000.0);
-        ImGui::SameLine();
-        ImGui::Checkbox(sphere->idString("###%d_linked"), &(sphere->isLinked));
-
-        if (sphere->isLinked) {
-            if (ax1_prev != sphere->ax1) { // ax1 changed
-                sphere->ax2 = sphere->ax1 * (sphere->prop2 / sphere->prop1);
-                sphere->ax3 = sphere->ax1 * (sphere->prop3 / sphere->prop1);
-            } else if (ax2_prev != sphere->ax2) {
-                sphere->ax1 = sphere->ax2 * (sphere->prop1 / sphere->prop2);
-                sphere->ax3 = sphere->ax2 * (sphere->prop3 / sphere->prop2);
-            } else if (ax3_prev != sphere->ax3) {
-                sphere->ax1 = sphere->ax3 * (sphere->prop1 / sphere->prop3);
-                sphere->ax2 = sphere->ax3 * (sphere->prop2 / sphere->prop3);
-            }
-        }
-
+        const char *label = sphere->idString("###%d");
+        const char *fmts[3] = {"A: %.3f", "B: %.3f", "C: %.3f"};
+        csg::gui::LinkedDragFloat3(label, &(sphere->ax1), &(sphere->isLinked), fmts);
         ImGui::Unindent();
     } else if (n->type == csg::node::CSG_CUBE) {
+        csg::node::Cube *cube = (csg::node::Cube*) n;
         ImGui::BulletText("Cube");
-    } else {
-        ImGui::BulletText("Unknown!");
+        ImGui::Indent();
+        const char *label = cube->idString("###%d");
+        const char *fmts[3] = {"X: %.3f", "Y: %.3f", "Z: %.3f"};
+        csg::gui::LinkedDragFloat3(label, &(cube->ax1), &(cube->isLinked), fmts);
+        ImGui::Unindent();
+    } else if (n->type == csg::node::CSG_TRANSLATE) {
+        csg::node::Translate *translate = (csg::node::Translate*) n;
+        ImGui::BulletText("Translate");
+        ImGui::Indent();
+        const char *label = translate->idString("###%d");
+        const char *fmts[3] = {"X: %.3f", "Y: %.3f", "Z: %.3f"};
+        csg::gui::LinkedDragFloat3(label, &(translate->dx), &(translate->isLinked), fmts);
+
+        if (translate->node) {
+            render_node(translate->node);
+        } else {
+            render_add_node(&(translate->node), translate->id, 1);
+        }
+    } else if (n->type == csg::node::CSG_SCALE) {
+        csg::node::Scale *scale = (csg::node::Scale*) n;
+        ImGui::BulletText("Scale");
+        ImGui::Indent();
+        const char *label = scale->idString("###%d");
+        const char *fmts[3] = {"SX: %.3f", "SY: %.3f", "SZ: %.3f"};
+        csg::gui::LinkedDragFloat3(label, &(scale->sx), &(scale->isLinked), fmts);
+
+        if (scale->node) {
+            render_node(scale->node);
+        } else {
+            render_add_node(&(scale->node), scale->id, 1);
+        }
     }
 }
 
@@ -259,8 +263,9 @@ void render_add_node(csg::node::Node **nodePtr, int id, int sub_id) {
 csg::node::Type render_add_menu(const char *popup_id) {
     csg::node::Type selected = csg::node::CSG_NONE;
     csg::node::Type types[] = {csg::node::CSG_UNION, csg::node::CSG_INTERSECTION,
-        csg::node::CSG_DIFFERENCE, csg::node::CSG_SPHERE, csg::node::CSG_CUBE};
-    const char *typeNames[] = {"Union", "Intersection", "Difference", "Sphere", "Cube"};
+        csg::node::CSG_DIFFERENCE, csg::node::CSG_SPHERE, csg::node::CSG_CUBE,
+        csg::node::CSG_TRANSLATE, csg::node::CSG_SCALE};
+    const char *typeNames[] = {"Union", "Intersection", "Difference", "Sphere", "Cube", "Translate", "Scale"};
     if (ImGui::BeginPopup(popup_id)) {
         for (int i = 0; i < IM_ARRAYSIZE(types); i++) {
             if (ImGui::Selectable(typeNames[i]))
@@ -284,6 +289,10 @@ csg::node::Node *create_node_from_type(csg::node::Type type) {
         return new csg::node::Sphere();
     } else if (type == csg::node::CSG_CUBE) {
         return new csg::node::Cube();
+    } else if (type == csg::node::CSG_TRANSLATE) {
+        return new csg::node::Translate();
+    } else if (type == csg::node::CSG_SCALE) {
+        return new csg::node::Scale();
     } else {
         return NULL;
     }

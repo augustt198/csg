@@ -65,7 +65,6 @@ Sphere::Sphere() {
     type = CSG_SPHERE;
     ax1 = 1.0, ax2 = 1.0, ax3 = 1.0;
     isLinked = true;
-    prop1 = 1.0, prop2 = 1.0, prop3 = 1.0;
 }
 
 float Sphere::evaluate(float x, float y, float z) {
@@ -100,6 +99,8 @@ BoundingBox Cube::getBoundingBox() {
 Translate::Translate() {
     type = CSG_TRANSLATE;
     dx = 0.0, dy = 0.0, dz = 0.0;
+    isLinked = false;
+    node = NULL;
 }
 
 float Translate::evaluate(float x, float y, float z) {
@@ -118,6 +119,7 @@ BoundingBox Translate::getBoundingBox() {
 Rotate::Rotate() {
     type = CSG_ROTATE;
     r1 = 0.0, r2 = 0.0, r3 = 0.0;
+    node = NULL;
 }
 
 float Rotate::evaluate(float x0, float y0, float z0) {
@@ -130,6 +132,25 @@ float Rotate::evaluate(float x0, float y0, float z0) {
     float z = z0*(c3*s1*s2 - c1*s3) + y0*(c2*s1) + z0*(c1*c3 + s1*s2*s3);
 
     return node->evaluate(x, y, z);
+}
+
+Scale::Scale() {
+    type = CSG_SCALE;
+    sx = 1.0, sy = 1.0, sz = 1.0;
+    isLinked = true;
+    node = NULL;
+}
+
+float Scale::evaluate(float x, float y, float z) {
+    return node->evaluate(x/sx, y/sy, z/sy);
+}
+
+BoundingBox Scale::getBoundingBox() {
+    BoundingBox bb = node->getBoundingBox();
+    return BoundingBox(
+        Vec3(bb.min.x*sx, bb.min.y*sy, bb.min.z*sz),
+        Vec3(bb.max.x*sx, bb.max.y*sy, bb.max.z*sz)
+    );
 }
 
 }

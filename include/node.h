@@ -13,7 +13,8 @@ enum Type {
     CSG_SPHERE,
     CSG_CUBE,
     CSG_TRANSLATE,
-    CSG_ROTATE
+    CSG_ROTATE,
+    CSG_SCALE
 };
 
 static int globalIDCounter = 0;
@@ -70,7 +71,6 @@ class Sphere : public Node {
     public:
     float ax1, ax2, ax3;
     bool isLinked;
-    float prop1, prop2, prop3;
 
     Sphere();
     virtual float evaluate(float x, float y, float z);
@@ -80,6 +80,7 @@ class Sphere : public Node {
 class Cube : public Node {
     public:
     float ax1, ax2, ax3;
+    bool isLinked;
 
     Cube();
     virtual float evaluate(float x, float y, float z);
@@ -89,6 +90,7 @@ class Cube : public Node {
 class Translate : public Node {
     public:
     float dx, dy, dz;
+    bool isLinked;
     Node *node;
 
     Translate();
@@ -104,6 +106,17 @@ class Rotate : public Node {
     Rotate();
     virtual float evaluate(float x0, float y0, float z0);
 };
-    
+
+class Scale : public Node {
+    public:
+    float sx, sy, sz;
+    bool isLinked;
+    Node *node;
+
+    Scale();
+    virtual float evaluate(float x, float y, float z);
+    virtual BoundingBox getBoundingBox();
+};
+
 } // end namespace node
 } // end namespace csg
