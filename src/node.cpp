@@ -3,6 +3,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include "mathutil.h"
+
 using std::sin;
 using std::cos;
 using std::max;
@@ -23,7 +25,7 @@ Union::Union() : left(NULL), right(NULL) {
 }
 
 float Union::evaluate(float x, float y, float z) {
-    return std::min(left->evaluate(x, y, z), right->evaluate(x, y, z));
+    return smoothmin(left->evaluate(x, y, z), right->evaluate(x, y, z));
 }
 
 BoundingBox Union::getBoundingBox() {
@@ -36,7 +38,7 @@ Intersection::Intersection() : left(NULL), right(NULL) {
 }
 
 float Intersection::evaluate(float x, float y, float z) {
-    return std::max(left->evaluate(x, y, z), right->evaluate(x, y, z));
+    return smoothmax(left->evaluate(x, y, z), right->evaluate(x, y, z));
 }
 
 // TODO
@@ -50,7 +52,7 @@ Difference::Difference() : left(NULL), right(NULL) {
 }
 
 float Difference::evaluate(float x, float y, float z) {
-    return std::max(left->evaluate(x, y, z), -right->evaluate(x, y, z));
+    return smoothmax(left->evaluate(x, y, z), -right->evaluate(x, y, z));
 }
 
 // can't make any assumptions
