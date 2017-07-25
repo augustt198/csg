@@ -3,6 +3,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include "common.h"
+
 using std::sin;
 using std::cos;
 using std::max;
@@ -30,6 +32,7 @@ class Node {
     // values < 1 are inside the surface
     // values > 1 are outside the surface
     virtual float evaluate(float x, float y, float z) = 0;
+    virtual BoundingBox getBoundingBox() = 0;
 };
 
 // union of left and right (commutative)
@@ -44,6 +47,10 @@ class Union : public Node {
 
     virtual float evaluate(float x, float y, float z) {
         return std::min(left->evaluate(x, y, z), right->evaluate(x, y, z));
+    }
+
+    virtual BoundingBox getBoundingBox() {
+        return bbUnion(left->getBoundingBox(), right->getBoundingBox());
     }
 };
 
@@ -60,6 +67,11 @@ class Intersection : public Node {
     virtual float evaluate(float x, float y, float z) {
         return std::max(left->evaluate(x, y, z), right->evaluate(x, y, z));
     }
+
+    // TODO
+    virtual BoundingBox getBoundingBox() {
+        return BoundingBox(Vec3(), Vec3());
+    }
 };
 
 // difference of left and right (not commutative)
@@ -74,6 +86,11 @@ class Difference : public Node {
 
     virtual float evaluate(float x, float y, float z) {
         return std::max(left->evaluate(x, y, z), -right->evaluate(x, y, z));
+    }
+
+    // can't make any assumptions
+    virtual BoundingBox getBoundingBox() {
+        return bbUnion(left->getBoundingBox(), right->getBoundingBox());
     }
 };
 
@@ -92,6 +109,13 @@ class Sphere : public Node {
 
     virtual float evaluate(float x, float y, float z) {
         return x*x/(ax1*ax1) + y*y/(ax2*ax2) + z*z/(ax3*ax3) - 1;
+    }
+
+    virtual BoundingBox getBoundingBox() {
+        return BoundingBox(
+            Vec3(-ax1, -ax2, -ax3),
+            Vec3(ax1, ax2, ax3)
+        );
     }
 };
 
@@ -114,6 +138,13 @@ class Cube : public Node {
         }
         */
     }
+
+    virtual BoundingBox getBoundingBox() {
+        return BoundingBox(
+            Vec3(-ax1, -ax2, -ax3),
+            Vec3(ax1, ax2, ax3)
+        );
+    }
 };
 
 class Translate : public Node {
@@ -128,6 +159,14 @@ class Translate : public Node {
 
     virtual float evaluate(float x, float y, float z) {
         return node->evaluate(x-dx, y-dx, z-dx);
+    }
+
+    virtual BoundingBox getBoundingBox() {
+        BoundingBox bb = node->getBoundingBox();
+        return BoundingBox(
+            Vec3(bb.min.x+dx, bb.min.y+dy, bb.min.z+dy),
+            Vec3(bb.max.x+dx, bb.max.y+dy, bb.max.z+dy)
+        );
     }
 };
 
