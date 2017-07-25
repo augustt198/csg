@@ -31,9 +31,9 @@ void error_callback(int error, const char *desc) {
     std::printf("[GLFW ERROR] %s (%d)\n", desc, error);
 }
 
-void render_node(csg::node::Node *n, int *id_counter);
+void render_node(csg::node::Node *n);
 csg::node::Type render_add_menu(const char *popup_id);
-void render_add_node(csg::node::Node **nodePtr, int *id_counter);
+void render_add_node(csg::node::Node **nodePtr, int id, int sub_id);
 csg::node::Node *create_node_from_type(csg::node::Type type);
 
 float testthingy(float x, float y, float z) {
@@ -128,9 +128,8 @@ int main(int argc, char **argv) {
         }
         ImGui::Separator();
 
-        int id_counter = 0;
         if (rootNode != NULL) {
-            render_node(rootNode, &id_counter);
+            render_node(rootNode);
         } else {
             if (ImGui::Button(" + Add "))
                 ImGui::OpenPopup("add");
@@ -150,36 +149,50 @@ int main(int argc, char **argv) {
     glfwTerminate();
 }
 
-void render_node(csg::node::Node *n, int *id_counter) {
+void render_node(csg::node::Node *n) {
     //std::printf("Called render node with %p\n", n);
     if (n == NULL) {
         ImGui::BulletText("Some NULL shet");
     } else if (n->type == csg::node::CSG_UNION) {
         csg::node::Union *unionNode = (csg::node::Union*) n;
-        if (ImGui::TreeNode("Union")) {
+        if (ImGui::TreeNode(unionNode->idString("Union###%d"))) {
             if (unionNode->left != NULL)
-                render_node(unionNode->left, id_counter);
+                render_node(unionNode->left);
             else
-                render_add_node(&(unionNode->left), id_counter);
+                render_add_node(&(unionNode->left), unionNode->id, 1);
 
             if (unionNode->right != NULL)
-                render_node(unionNode->right, id_counter);
+                render_node(unionNode->right);
             else
-                render_add_node(&(unionNode->right), id_counter);
+                render_add_node(&(unionNode->right), unionNode->id, 2);
             ImGui::TreePop();
         }
     } else if (n->type == csg::node::CSG_DIFFERENCE) {
         csg::node::Difference *diffNode = (csg::node::Difference*) n;
-        if (ImGui::TreeNode("Difference")) {
+        if (ImGui::TreeNode(diffNode->idString("Difference###%d"))) {
             if (diffNode->left != NULL)
-                render_node(diffNode->left, id_counter);
+                render_node(diffNode->left);
             else
-                render_add_node(&(diffNode->left), id_counter);
+                render_add_node(&(diffNode->left), diffNode->id, 1);
 
             if (diffNode->right != NULL)
-                render_node(diffNode->right, id_counter);
+                render_node(diffNode->right);
             else
-                render_add_node(&(diffNode->right), id_counter);
+                render_add_node(&(diffNode->right), diffNode->id, 2);
+            ImGui::TreePop();
+        }
+    } else if (n->type == csg::node::CSG_INTERSECTION) {
+        csg::node::Intersection *interNode = (csg::node::Intersection*) n;
+        if (ImGui::TreeNode(interNode->idString("Intersection###%d"))) {
+            if (interNode->left != NULL)
+                render_node(interNode->left);
+            else
+                render_add_node(&(interNode->left), interNode->id, 1);
+
+            if (interNode->right != NULL)
+                render_node(interNode->right);
+            else
+                render_add_node(&(interNode->right), interNode->id, 2);
             ImGui::TreePop();
         }
     } else if (n->type == csg::node::CSG_SPHERE) {
@@ -199,9 +212,9 @@ void render_node(csg::node::Node *n, int *id_counter) {
 
         ImGui::BulletText("Sphere");
         ImGui::Indent();
-        ImGui::DragFloat3("###Radius", &(sphere->ax1), 0.02, 0.001f, 1000.0);
+        ImGui::DragFloat3(sphere->idString("###%d_radius"), &(sphere->ax1), 0.02, 0.001f, 1000.0);
         ImGui::SameLine();
-        ImGui::Checkbox("###checx", &(sphere->isLinked));
+        ImGui::Checkbox(sphere->idString("###%d_linked"), &(sphere->isLinked));
 
         if (sphere->isLinked) {
             if (ax1_prev != sphere->ax1) { // ax1 changed
@@ -224,15 +237,14 @@ void render_node(csg::node::Node *n, int *id_counter) {
     }
 }
 
-void render_add_node(csg::node::Node **nodePtr, int *id_counter) {
+void render_add_node(csg::node::Node **nodePtr, int id, int sub_id) {
     ImGui::Bullet();
     ImGui::SameLine();
 
-    (*id_counter)++;
     char id_str[15] = {0};
     char button_str[30] = {0};
-    std::sprintf(id_str, "%d", *id_counter);
-    std::sprintf(button_str, " + Add ###%d", *id_counter);
+    std::sprintf(id_str, "%d_%d", id, sub_id);
+    std::sprintf(button_str, " + Add ###%d_%d", id, sub_id);
 
     if (ImGui::Button(button_str))
         ImGui::OpenPopup(id_str);

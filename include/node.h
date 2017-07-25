@@ -1,14 +1,6 @@
 #pragma once
 
-#include <cmath>
-#include <algorithm>
-
 #include "common.h"
-
-using std::sin;
-using std::cos;
-using std::max;
-using std::abs;
 
 namespace csg {
 namespace node {
@@ -24,10 +16,19 @@ enum Type {
     CSG_ROTATE
 };
 
+static int globalIDCounter = 0;
+
 class Node {
     public:
 
     Type type;
+    int id;
+
+    Node() {
+        id = globalIDCounter++;
+    }
+
+    const char *idString(const char *fmt);
     
     // values < 1 are inside the surface
     // values > 1 are outside the surface

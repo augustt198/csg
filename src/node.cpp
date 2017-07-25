@@ -11,6 +11,13 @@ using std::abs;
 namespace csg {
 namespace node {
 
+const char *Node::idString(const char *fmt) {
+    char *res;
+    asprintf(&res, fmt, id);
+    return res;
+}
+
+
 Union::Union() : left(NULL), right(NULL) {
     type = CSG_UNION;
 }
