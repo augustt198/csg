@@ -18,8 +18,14 @@
 #include "camera.h"
 #include "glmutil.h"
 #include "customgui.h"
+#include "mathutil.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+
+namespace csg {
+    extern bool GLOBAL_SMOOTHING_ENABLED;
+    extern float GLOBAL_SMOOTHING_CONSTANT;
+}
 
 GLFWwindow *create_window() {
     int width = 1100;
@@ -84,7 +90,7 @@ int main(int argc, char **argv) {
     glfwSetCursorPosCallback(win, csg::OrbitCamera::cursorPosCallback);
     glfwSetMouseButtonCallback(win, csg::OrbitCamera::mouseButtonCallback);
     glfwSetScrollCallback(win, csg::OrbitCamera::scrollCallback);
-    camera.setAngles(0.1, 0.1);
+    camera.setAngles(-M_PI/2, 0.1);
 
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
@@ -107,7 +113,7 @@ int main(int argc, char **argv) {
             glUseProgram(0);
         }
 
-        static int subdivisions = 200;
+        static int subdivisions = 100;
         ImGui::Begin("CSG");
         ImGui::Text("Geometry Tree");
         ImGui::SameLine(ImGui::GetWindowWidth()-65);
@@ -117,6 +123,7 @@ int main(int argc, char **argv) {
             std::printf("Isosurface created. Vert count: %lu\n", verts->size());
 
             if (verts->size() > 0) {
+                std::printf("%d\n", csg::GLOBAL_SMOOTHING_ENABLED);
                 if (mesh) {
                     mesh->updateVertices(*verts);
                 } else {
@@ -133,6 +140,8 @@ int main(int argc, char **argv) {
         if (ImGui::TreeNode("Render Options")) {
             ImGui::Text("Camera: theta %.3f / phi %.3f", camera.theta, camera.phi);
             ImGui::DragInt("Subdivisions", &subdivisions, 0.5, 20, 1000);
+            ImGui::Checkbox("Enable Smoothing", &csg::GLOBAL_SMOOTHING_ENABLED);
+            ImGui::DragFloat("Smoothing", &csg::GLOBAL_SMOOTHING_CONSTANT, 0.5, 0.001, 0.5);
             ImGui::TreePop();
         }
         ImGui::Separator();

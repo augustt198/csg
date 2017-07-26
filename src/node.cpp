@@ -25,7 +25,7 @@ Union::Union() : left(NULL), right(NULL) {
 }
 
 float Union::evaluate(float x, float y, float z) {
-    return smoothmin(left->evaluate(x, y, z), right->evaluate(x, y, z));
+    return GLOBAL_MIN_FUNC(left->evaluate(x, y, z), right->evaluate(x, y, z));
 }
 
 BoundingBox Union::getBoundingBox() {
@@ -38,7 +38,7 @@ Intersection::Intersection() : left(NULL), right(NULL) {
 }
 
 float Intersection::evaluate(float x, float y, float z) {
-    return smoothmax(left->evaluate(x, y, z), right->evaluate(x, y, z));
+    return GLOBAL_MAX_FUNC(left->evaluate(x, y, z), right->evaluate(x, y, z));
 }
 
 // TODO
@@ -52,7 +52,7 @@ Difference::Difference() : left(NULL), right(NULL) {
 }
 
 float Difference::evaluate(float x, float y, float z) {
-    return smoothmax(left->evaluate(x, y, z), -right->evaluate(x, y, z));
+    return GLOBAL_MAX_FUNC(left->evaluate(x, y, z), -right->evaluate(x, y, z));
 }
 
 // can't make any assumptions
