@@ -9,7 +9,9 @@ namespace csg {
     class OrbitCamera {
         
         public:
-        OrbitCamera(float distance=10.0) : distance(distance) {
+        OrbitCamera(float distance=10.0, float ms=0.01, float zs=0.03) :
+            distance(distance), mouseSensitivity(ms), zoomSensitivity(zs) {
+
             distance = 10.0;
             theta = 0.0;
             phi = 0.0;
@@ -32,10 +34,41 @@ namespace csg {
             phi = _phi;
         }
 
+        static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+            OrbitCamera *c = (OrbitCamera*) glfwGetWindowUserPointer(window);
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                glfwGetCursorPos(window, &(c->prevPosX), &(c->prevPosY));
+            }
+        }
+
+        static void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
+            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                OrbitCamera *c = (OrbitCamera*) glfwGetWindowUserPointer(window);
+                float deltaX = xpos - c->prevPosX;
+                float deltaY = ypos - c->prevPosY;
+
+                c->theta += c->mouseSensitivity * deltaY;
+                c->phi += c->mouseSensitivity * -deltaX;
+
+                if (c->theta > -0.0001) c->theta = -0.0001;
+                if (c->theta < -M_PI+0.0001) c->theta = -M_PI+0.0001;
+
+                c->prevPosX = xpos;
+                c->prevPosY = ypos;
+            }
+        }
+
+        static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+            OrbitCamera *c = (OrbitCamera*) glfwGetWindowUserPointer(window);
+            c->distance += c->zoomSensitivity * -yoffset;
+        }
+
+        float theta, phi;
         private:
         float distance;
-        float theta, phi;
+        float mouseSensitivity, zoomSensitivity;
 
+        double prevPosX, prevPosY;
     };
 
 }

@@ -76,12 +76,15 @@ int main(int argc, char **argv) {
 
     csg::node::Node *rootNode = NULL;
 
-    csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 0.01, 0.01, 0.01);
-
     csg::ShaderProgram shader("shaders/shader.vert", "shaders/shader.frag");
     csg::Mesh *mesh = nullptr;
 
     csg::OrbitCamera camera;
+    glfwSetWindowUserPointer(win, &camera);
+    glfwSetCursorPosCallback(win, csg::OrbitCamera::cursorPosCallback);
+    glfwSetMouseButtonCallback(win, csg::OrbitCamera::mouseButtonCallback);
+    glfwSetScrollCallback(win, csg::OrbitCamera::scrollCallback);
+    camera.setAngles(0.1, 0.1);
 
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
@@ -92,7 +95,6 @@ int main(int argc, char **argv) {
 
         if (mesh) {
             glUseProgram(shader.program);
-            camera.setAngles(glfwGetTime()/2, glfwGetTime()/2);
             shader.setMat4("cameraDir", camera.getCameraMatrix());
 
             int width, height;
@@ -105,10 +107,12 @@ int main(int argc, char **argv) {
             glUseProgram(0);
         }
 
+        static int subdivisions = 200;
         ImGui::Begin("CSG");
         ImGui::Text("Geometry Tree");
         ImGui::SameLine(ImGui::GetWindowWidth()-65);
         if (ImGui::Button("Render") && rootNode != NULL) {
+            csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 2.0/subdivisions, 2.0/subdivisions, 2.0/subdivisions);
             std::vector<csg::Vertex> *verts = mcInstance.isosurface(*rootNode, 0.0);
             std::printf("Isosurface created. Vert count: %lu\n", verts->size());
 
@@ -117,16 +121,19 @@ int main(int argc, char **argv) {
                     mesh->updateVertices(*verts);
                 } else {
                     mesh = new csg::Mesh(*verts);
-                    for (int i = 0; i < 10; i++) {
-                        csg::Vertex v = (*verts)[i];
-                        std::printf("normal %f %f %f\n", v.normal.x, v.normal.y, v.normal.z);
-                    }
                 }
 
+                /*
                 std::ofstream stlFile("mesh.stl");
                 mesh->writeSTL(stlFile);
                 stlFile.close();
+                */
             }
+        }
+        if (ImGui::TreeNode("Render Options")) {
+            ImGui::Text("Camera: theta %.3f / phi %.3f", camera.theta, camera.phi);
+            ImGui::DragInt("Subdivisions", &subdivisions, 0.5, 20, 1000);
+            ImGui::TreePop();
         }
         ImGui::Separator();
 
@@ -152,7 +159,6 @@ int main(int argc, char **argv) {
 }
 
 void render_node(csg::node::Node *n) {
-    //std::printf("Called render node with %p\n", n);
     if (n == NULL) {
         ImGui::BulletText("Some NULL shet");
     } else if (n->type == csg::node::CSG_UNION) {
