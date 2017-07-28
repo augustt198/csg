@@ -104,7 +104,7 @@ Translate::Translate() {
 }
 
 float Translate::evaluate(float x, float y, float z) {
-    return node->evaluate(x-dx, y-dx, z-dx);
+    return node->evaluate(x-dx, y-dy, z-dz);
 }
 
 BoundingBox Translate::getBoundingBox() {
