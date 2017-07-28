@@ -1,48 +1,62 @@
 #include "mesh.h"
 
 #include <cmath>
+#include <cstdio>
 
 namespace csg {
 
-Mesh::Mesh(std::vector<Vertex> vertices) : vertices(vertices) {
+Mesh::Mesh() {
+    currentVertices = NULL;
+    newVertices = NULL;
+    needsUpdate = false;
+
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &(vertices[0]), GL_DYNAMIC_DRAW);
-
+    //glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &(vertices[0]), GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     // the vertex positions - no offset b/c it's first in struct
     glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex), (void*) 0);
     glEnableVertexAttribArray(1);
     // the normal vectors - offset by the vertex positions (Vec3)
     glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(Vertex), (void*) sizeof(Vec3));
-
     glBindVertexArray(0);
 }
 
 void Mesh::render() {
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-    glBindVertexArray(0);
+    if (currentVertices) {
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, currentVertices->size());
+        glBindVertexArray(0);
+    }
 }
 
+void Mesh::tryUpdate() {
+    if (needsUpdate) {
+        needsUpdate = false;
 
-void Mesh::updateVertices(std::vector<Vertex> newVertices) {
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    if (newVertices.size() < vertices.size()) {
-        glBufferSubData(GL_ARRAY_BUFFER, 0, newVertices.size() * sizeof(Vertex), &(newVertices[0]));
-    } else {
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &(vertices[0]), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        void *dataPtr = &(newVertices->front());
+        glBufferData(GL_ARRAY_BUFFER, newVertices->size()*sizeof(Vertex), dataPtr, GL_DYNAMIC_DRAW);
+
+        if (currentVertices) {
+            delete currentVertices;
+        }
+
+        currentVertices = newVertices;
     }
+}
 
-    vertices = newVertices;
-    glBindVertexArray(0);
+void Mesh::updateVertices(std::vector<Vertex> *newVertices) {
+    this->newVertices = newVertices;
+    needsUpdate = true;
 }
 
 void Mesh::writeSTL(std::ostream& out, const char *solidName, bool ascii) {
+    if (!currentVertices) return;
+    std::vector<Vertex> vertices = *currentVertices;
     out << "solid " << solidName << std::endl;
     for (int i = 0; i < vertices.size(); i += 3) {
         // get face normal from vertex normals

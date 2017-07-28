@@ -21,7 +21,7 @@ class MarchingCubes {
         stepX(_stepX), stepY(_stepY), stepZ(_stepZ) {}
 
     
-    std::vector<Vertex> *isosurface(csg::node::Node &node, float w, bool calculateNormals=true);
+    std::vector<Vertex> *isosurface(csg::node::Node &node, float w, float *progress=NULL, bool calculateNormals=true);
      
 };
 

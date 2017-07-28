@@ -10,17 +10,21 @@ namespace csg {
 class Mesh {
     public:
 
-    Mesh(std::vector<Vertex> vertices);
+    Mesh();
 
     void render();
 
-    void updateVertices(std::vector<Vertex> newVertices);
+    void updateVertices(std::vector<Vertex> *newVertices);
 
     void writeSTL(std::ostream& out, const char *solidName="mesh", bool ascii=true);
 
+    void tryUpdate();
+
     private:
     GLuint VAO, VBO;
-    std::vector<Vertex> vertices;
+    std::vector<Vertex> *currentVertices;
+    std::vector<Vertex> *newVertices;
+    bool needsUpdate;
 };
 
 }

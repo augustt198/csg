@@ -5,6 +5,8 @@
 #include <vector>
 #include <fstream>
 
+#include <pthread.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -43,6 +45,14 @@ void render_node(csg::node::Node *n);
 csg::node::Type render_add_menu(const char *popup_id);
 void render_add_node(csg::node::Node **nodePtr, int id, int sub_id);
 csg::node::Node *create_node_from_type(csg::node::Type type);
+
+struct updateThreadMessage {
+    csg::mc::MarchingCubes *mcInstance;
+    csg::Mesh *mesh;
+    csg::node::Node *node;
+    float *progress;
+};
+void *updateMeshThread(void *handle);
 
 int main(int argc, char **argv) {
     if (!glfwInit()) {
@@ -83,7 +93,7 @@ int main(int argc, char **argv) {
     csg::node::Node *rootNode = NULL;
 
     csg::ShaderProgram shader("shaders/shader.vert", "shaders/shader.frag");
-    csg::Mesh *mesh = nullptr;
+    csg::Mesh *mesh = new csg::Mesh();
 
     csg::OrbitCamera camera;
     glfwSetWindowUserPointer(win, &camera);
@@ -92,6 +102,7 @@ int main(int argc, char **argv) {
     glfwSetScrollCallback(win, csg::OrbitCamera::scrollCallback);
     camera.setAngles(-M_PI/2, 0.1);
 
+    float progress = 0.0;
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
         ImGui_ImplGlfwGL3_NewFrame();
@@ -100,6 +111,7 @@ int main(int argc, char **argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (mesh) {
+            mesh->tryUpdate();
             glUseProgram(shader.program);
             shader.setMat4("cameraDir", camera.getCameraMatrix());
 
@@ -114,28 +126,20 @@ int main(int argc, char **argv) {
         }
 
         static int subdivisions = 100;
+
         ImGui::Begin("CSG");
         ImGui::Text("Geometry Tree");
         ImGui::SameLine(ImGui::GetWindowWidth()-65);
         if (ImGui::Button("Render") && rootNode != NULL) {
-            csg::mc::MarchingCubes mcInstance(-1, -1, -1, 1, 1, 1, 2.0/subdivisions, 2.0/subdivisions, 2.0/subdivisions);
-            std::vector<csg::Vertex> *verts = mcInstance.isosurface(*rootNode, 0.0);
-            std::printf("Isosurface created. Vert count: %lu\n", verts->size());
+            csg::mc::MarchingCubes *mcInstance = new csg::mc::MarchingCubes(-1, -1, -1, 1, 1, 1, 2.0/subdivisions, 2.0/subdivisions, 2.0/subdivisions);
 
-            if (verts->size() > 0) {
-                std::printf("%d\n", csg::GLOBAL_SMOOTHING_ENABLED);
-                if (mesh) {
-                    mesh->updateVertices(*verts);
-                } else {
-                    mesh = new csg::Mesh(*verts);
-                }
-
-                /*
-                std::ofstream stlFile("mesh.stl");
-                mesh->writeSTL(stlFile);
-                stlFile.close();
-                */
-            }
+            pthread_t thread;
+            struct updateThreadMessage *msg = new struct updateThreadMessage();
+            msg->mcInstance = mcInstance;
+            msg->mesh = mesh;
+            msg->node = rootNode;
+            msg->progress = &progress; 
+            pthread_create(&thread, NULL, updateMeshThread, msg);
         }
         if (ImGui::TreeNode("Render Options")) {
             ImGui::Text("Camera: theta %.3f / phi %.3f", camera.theta, camera.phi);
@@ -143,6 +147,9 @@ int main(int argc, char **argv) {
             ImGui::Checkbox("Enable Smoothing", &csg::GLOBAL_SMOOTHING_ENABLED);
             ImGui::DragFloat("Smoothing", &csg::GLOBAL_SMOOTHING_CONSTANT, 0.5, 0.001, 0.5);
             ImGui::TreePop();
+        }
+        if (progress != 0.0 && progress != 1.0) {
+            ImGui::ProgressBar(progress);
         }
         ImGui::Separator();
 
@@ -311,4 +318,21 @@ csg::node::Node *create_node_from_type(csg::node::Type type) {
     } else {
         return NULL;
     }
+}
+
+void *updateMeshThread(void *handle) {
+    struct updateThreadMessage *msg = (struct updateThreadMessage*) handle;
+    csg::node::Node *node = msg->node;
+
+    std::vector<csg::Vertex> *verts = msg->mcInstance->isosurface(*node, 0.0, msg->progress);
+    csg::Mesh *mesh = msg->mesh;
+    
+    if (verts->size() > 0) {
+        mesh->updateVertices(verts);
+    }
+
+    delete msg->mcInstance;
+    delete msg;
+
+    return NULL;
 }

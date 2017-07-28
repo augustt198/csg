@@ -3,10 +3,11 @@
 
 using namespace csg;
 
-std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float w, bool calculateNormals) {
+std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float w, float *progress, bool calculateNormals) {
     std::vector<Vertex> *verts = new std::vector<Vertex>();
 
     for (float x = minX; x <= maxX; x += stepX) {
+        *progress = (x-minX) / (maxX-minX);
         for (float y = minY; y < maxY; y += stepY) {
             for (float z = minZ; z < maxZ; z += stepZ) {
                 float f0 = node.evaluate(x, y, z),
@@ -79,6 +80,8 @@ std::vector<Vertex> *mc::MarchingCubes::isosurface(csg::node::Node &node, float 
             }
         }
     }
+
+    *progress = 1.0; // done
 
     return verts;
 }
