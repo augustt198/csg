@@ -18,15 +18,17 @@ namespace csg {
         }
 
         glm::mat4 getCameraMatrix() {
-            glm::vec3 cameraPos(
+            glm::vec3 center(0.0, 0.0, 0.0);
+            glm::vec3 up(0.0, 0.0, 1.0);
+            return glm::lookAt(getCameraPos(), center, up);
+        }
+
+        glm::vec3 getCameraPos() { 
+            return glm::vec3(
                 distance * std::sin(theta) * std::cos(phi),
                 distance * std::sin(theta) * std::sin(phi),
                 distance * std::cos(theta)
             );
-            glm::vec3 center(0.0, 0.0, 0.0);
-            glm::vec3 up(0.0, 0.0, 1.0);
-
-            return glm::lookAt(cameraPos, center, up);
         }
 
         void setAngles(float _theta, float _phi) {

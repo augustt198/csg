@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
             mesh->tryUpdate();
             glUseProgram(shader.program);
             shader.setMat4("cameraDir", camera.getCameraMatrix());
+            shader.setVec3("cameraPos", camera.getCameraPos());
 
             int width, height;
             glfwGetWindowSize(win, &width, &height);
@@ -248,6 +249,7 @@ void render_node(csg::node::Node *n) {
         } else {
             render_add_node(&(translate->node), translate->id, 1);
         }
+        ImGui::Unindent();
     } else if (n->type == csg::node::CSG_SCALE) {
         csg::node::Scale *scale = (csg::node::Scale*) n;
         ImGui::BulletText("Scale");
